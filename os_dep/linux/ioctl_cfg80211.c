@@ -3315,6 +3315,7 @@ static int cfg80211_rtw_set_wiphy_params(
 
 
 
+
 static int rtw_cfg80211_set_wpa_version(struct security_priv *psecuritypriv, u32 wpa_version)
 {
 	RTW_INFO("%s, wpa_version=%d\n", __func__, wpa_version);
@@ -4206,7 +4207,7 @@ static int cfg80211_rtw_set_txpower(struct wiphy *wiphy,
 	struct wireless_dev *wdev,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6,17,0)
 	int radio_idx,
-#endif	
+#endif
 	enum nl80211_tx_power_setting type, int mbm)
 
 {
@@ -4249,11 +4250,11 @@ static int cfg80211_rtw_get_txpower(
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6,14,0)
 	unsigned int link_id,
 #endif
-	int *dbm)
+	int iftype, unsigned int link_id, int *dbm)
 {
 	RTW_INFO("%s\n", __func__);
 
-	*dbm = (12);
+	*dbm = 12;
 
 	return 0;
 }
@@ -5938,9 +5939,7 @@ static int cfg80211_rtw_set_monitor_channel(struct wiphy *wiphy
 
 static int cfg80211_rtw_get_channel(struct wiphy *wiphy,
 	struct wireless_dev *wdev,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 2)
-	u32 link_id,
-#endif
+	unsigned int link_id,
 	struct cfg80211_chan_def *chandef)
 {
 	_adapter *padapter = wiphy_to_adapter(wiphy);
