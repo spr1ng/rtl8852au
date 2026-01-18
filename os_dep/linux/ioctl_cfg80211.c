@@ -4246,11 +4246,14 @@ static int cfg80211_rtw_get_txpower(
 	struct wireless_dev *wdev,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6,17,0)
 	int radio_idx,
-#endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,14,0)
 	unsigned int link_id,
-#endif
+	int *dbm)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6,14,0)
+	unsigned int link_id,
+	int *dbm)
+#else
 	int iftype, unsigned int link_id, int *dbm)
+#endif
 {
 	RTW_INFO("%s\n", __func__);
 
