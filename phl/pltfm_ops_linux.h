@@ -54,7 +54,12 @@ static inline char *_os_strcpy(char *dest, const char *src)
 }
 static inline char *_os_strncpy(char *dest, const char *src, size_t n)
 {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0))
+	strscpy_pad(dest, src, n);
+	return dest;
+#else
 	return strncpy(dest, src, n);
+#endif
 }
 #if 1
 #define _os_strchr(s, c) strchr(s, c)

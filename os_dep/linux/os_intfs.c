@@ -260,8 +260,7 @@ static int rtw_ndev_init(struct net_device *dev)
 
 	RTW_PRINT(FUNC_ADPT_FMT" if%d mac_addr="MAC_FMT"\n"
 		, FUNC_ADPT_ARG(adapter), (adapter->iface_id + 1), MAC_ARG(dev->dev_addr));
-	strncpy(adapter->old_ifname, dev->name, IFNAMSIZ);
-	adapter->old_ifname[IFNAMSIZ - 1] = '\0';
+	strscpy(adapter->old_ifname, dev->name, IFNAMSIZ);
 #ifdef CONFIG_ARCH_CORTINA
 	dev->priv_flags = IFF_DOMAIN_WLAN;
 #endif
