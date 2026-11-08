@@ -6550,7 +6550,12 @@ inline s32 rtw_cfg80211_get_last_ro_ch_passing_ms(_adapter *adapter)
 static s32 cfg80211_rtw_remain_on_channel(struct wiphy *wiphy,
 	struct wireless_dev *wdev,
 	struct ieee80211_channel *channel,
-	unsigned int duration, u64 *cookie
+	unsigned int duration,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(7, 3, 0))
+	u64 cookie
+#else
+	u64 *cookie
+#endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0))
 	, const u8 *rx_addr
 #endif
@@ -6564,6 +6569,7 @@ static s32 cfg80211_rtw_remain_on_channel(struct wiphy *wiphy,
 	struct cfg80211_roch_info *pcfg80211_rochinfo;
 	struct back_op_param bkop_parm;
 	u8 channel_type = 0;
+	u64 roc_cookie;
 
 #if defined(RTW_DEDICATED_P2P_DEVICE)
 	if (wdev == wiphy_to_pd_wdev(wiphy))
@@ -6577,11 +6583,17 @@ static s32 cfg80211_rtw_remain_on_channel(struct wiphy *wiphy,
 	pregistrypriv = &padapter->registrypriv;
 	pcfg80211_rochinfo = &padapter->cfg80211_rochinfo;
 
-	*cookie = ATOMIC_INC_RETURN(&pcfg80211_rochinfo->ro_ch_cookie_gen);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(7, 3, 0))
+	/* cfg80211 pre-assigns cookie and passes it as an input value */
+	roc_cookie = cookie;
+#else
+	roc_cookie = ATOMIC_INC_RETURN(&pcfg80211_rochinfo->ro_ch_cookie_gen);
+	*cookie = roc_cookie;
+#endif
 
 	RTW_INFO(FUNC_ADPT_FMT"%s ch:%u duration:%d, cookie:0x%llx\n"
 		, FUNC_ADPT_ARG(padapter), wdev == wiphy_to_pd_wdev(wiphy) ? " PD" : ""
-		, remain_ch, duration, *cookie);
+		, remain_ch, duration, roc_cookie);
 
 	if (rtw_chset_search_ch(adapter_to_chset(padapter), remain_ch) < 0) {
 		RTW_WARN(FUNC_ADPT_FMT" invalid ch:%u\n", FUNC_ADPT_ARG(padapter), remain_ch);
@@ -6607,7 +6619,7 @@ static s32 cfg80211_rtw_remain_on_channel(struct wiphy *wiphy,
 	else
 		bkop_parm.off_ch_ext_dur = pregistrypriv->roch_extend_dur * 6;
 
-	rtw_phl_remain_on_ch_cmd(padapter, *cookie, wdev,
+	rtw_phl_remain_on_ch_cmd(padapter, roc_cookie, wdev,
 		channel, channel_type, duration, &bkop_parm, _TRUE);
 
 	return 0;
@@ -6840,7 +6852,11 @@ u8 rtw_mgnt_tx_handler(_adapter *adapter, u8 *buf)
 static int cfg80211_rtw_mgmt_tx(struct wiphy *wiphy,
 	struct wireless_dev *wdev,
 	struct cfg80211_mgmt_tx_params *params,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(7, 3, 0))
+	u64 cookie)
+#else
 	u64 *cookie)
+#endif
 {
 	struct ieee80211_channel *chan = params->chan;
 	const u8 *buf = params->buf;
@@ -6869,6 +6885,7 @@ static int cfg80211_rtw_mgmt_tx(struct wiphy *wiphy,
 	struct dvobj_priv *dvobj;
 	struct rtw_wdev_priv *pwdev_priv;
 	struct rf_ctl_t *rfctl;
+	u64 mgmt_cookie;
 
 	#if defined(RTW_DEDICATED_P2P_DEVICE)
 	if (wdev == wiphy_to_pd_wdev(wiphy))
@@ -6901,8 +6918,14 @@ static int cfg80211_rtw_mgmt_tx(struct wiphy *wiphy,
 	dvobj = adapter_to_dvobj(padapter);
 	pwdev_priv = adapter_wdev_data(padapter);
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(7, 3, 0))
+	/* cfg80211 pre-assigns cookie and passes it as an input value */
+	mgmt_cookie = cookie;
+#else
 	/* cookie generation */
-	*cookie = pwdev_priv->mgmt_tx_cookie++;
+	mgmt_cookie = pwdev_priv->mgmt_tx_cookie++;
+	*cookie = mgmt_cookie;
+#endif
 
 #ifdef CONFIG_DEBUG_CFG80211
 	RTW_INFO(FUNC_ADPT_FMT"%s len=%zu, ch=%d"
@@ -6912,7 +6935,7 @@ static int cfg80211_rtw_mgmt_tx(struct wiphy *wiphy,
 #endif /* CONFIG_DEBUG_CFG80211 */
 
 	/* indicate ack before issue frame to avoid racing with rsp frame */
-	rtw_cfg80211_mgmt_tx_status(wdev, *cookie, buf, len, ack, GFP_KERNEL);
+	rtw_cfg80211_mgmt_tx_status(wdev, mgmt_cookie, buf, len, ack, GFP_KERNEL);
 
 	frame_styp = le16_to_cpu(((struct rtw_ieee80211_hdr_3addr *)buf)->frame_ctl) & IEEE80211_FCTL_STYPE;
 	if (IEEE80211_STYPE_PROBE_RESP == frame_styp) {
